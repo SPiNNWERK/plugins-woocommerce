@@ -296,7 +296,7 @@ function cashpresso_plugin_init() {
 
   // Hook-based placement is classic-theme only; block themes use the product-label block.
   add_action('wp', function () {
-    if (wp_is_block_theme()) {
+    if (function_exists('wp_is_block_theme') && wp_is_block_theme()) {
       return;
     }
 
@@ -310,11 +310,15 @@ function cashpresso_plugin_init() {
 }
 
 function cashpresso_register_blocks() {
+  if (!class_exists('WooCommerce')) {
+    return;
+  }
+
   register_block_type(plugin_dir_path(__FILE__) . 'assets/blocks/product-label/');
 }
 
 function cashpresso_register_block_patterns() {
-  if (!function_exists('register_block_pattern')) {
+  if (!class_exists('WooCommerce') || !function_exists('register_block_pattern')) {
     return;
   }
 

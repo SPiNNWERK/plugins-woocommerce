@@ -9,7 +9,8 @@
 
 defined('ABSPATH') or exit;
 
-if (!function_exists('cashpresso_get_product_price_value')) {
+// wc_get_product() guards against a saved block rendering while WooCommerce is inactive.
+if (!function_exists('wc_get_product') || !function_exists('cashpresso_get_product_price_value')) {
     return;
 }
 

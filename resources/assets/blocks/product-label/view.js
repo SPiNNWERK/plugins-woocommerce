@@ -1,17 +1,16 @@
 import jQuery from 'jquery';
 
-// Register a label that was added after the wizard's initial init() (e.g. AJAX-loaded lists).
-// Guarded: optional in the external script, so labels present at load still work via init().
 function registerBlock(block) {
     if (typeof window.C2EcomWizard?.registerLabel !== 'function') {
         return;
     }
 
-    const label = block.querySelector('.c2-financing-label');
-    const id = label && label.getAttribute('id');
+    const label = block.querySelector('.c2-financing-label'),
+        id = label && label.getAttribute('id'),
+        amount = label && parseFloat(label.getAttribute('data-c2-financing-amount'));
 
-    if (id) {
-        window.C2EcomWizard.registerLabel(id, parseFloat(label.getAttribute('data-c2-financing-amount')));
+    if (id && Number.isFinite(amount)) {
+        window.C2EcomWizard.registerLabel(id, amount);
     }
 }
 
@@ -20,8 +19,8 @@ function updateBlock(block, price) {
         return;
     }
 
-    const label = block.querySelector('.c2-financing-label');
-    const id = label && label.getAttribute('id');
+    const label = block.querySelector('.c2-financing-label'),
+        id = label && label.getAttribute('id');
 
     if (id) {
         window.C2EcomWizard.refreshAmount(id, price.toFixed(2));
@@ -31,15 +30,22 @@ function updateBlock(block, price) {
 function initBlocks() {
     document.querySelectorAll('[data-c2-block]').forEach(registerBlock);
 
-    // Keep the label in sync with the selected variation on variable products.
-    jQuery(document).on('show_variation', '.single_variation_wrap', function (event, variation) {
+    // Keep the label in sync with the selected variation, scoped to the product that fired the
+    // event so other products' labels on the page (related, upsells) keep their own amount.
+    jQuery(document).on('show_variation', '.single_variation_wrap', (event, variation) => {
         const price = parseFloat(variation.display_price);
 
-        if (Number.isNaN(price)) {
+        if (!Number.isFinite(price)) {
             return;
         }
 
-        document.querySelectorAll('[data-c2-block]').forEach((block) => updateBlock(block, price));
+        const form = event.currentTarget.closest('form.variations_form'),
+            productId = form?.dataset.product_id,
+            selector = productId
+                ? `[data-c2-block][data-c2-product-id="${productId}"]`
+                : '[data-c2-block]';
+
+        document.querySelectorAll(selector).forEach((block) => updateBlock(block, price));
     });
 
     // Pick up blocks injected after page load (paginated/filtered product lists, quick-view).
